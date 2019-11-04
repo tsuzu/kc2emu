@@ -3,8 +3,8 @@ package main
 type Phase func(*Storage) Phase
 
 func p0(s *Storage) Phase {
-	s.MAR = s.ACC
-	s.ACC++
+	s.MAR = s.PC
+	s.PC++
 
 	return p1
 }
@@ -372,6 +372,13 @@ func outP2(s *Storage) Phase {
 	return func(s *Storage) Phase {
 		s.obufFlag = 1
 
+		obufKicker := s.obufKicker
+		go func() {
+			if obufKicker != nil {
+				obufKicker()
+			}
+		}()
+
 		return nil
 	}
 }
@@ -381,6 +388,13 @@ func inP2(s *Storage) Phase {
 
 	return func(s *Storage) Phase {
 		s.ibufFlag = 0
+
+		ibufKicker := s.ibufKicker
+		go func() {
+			if ibufKicker != nil {
+				ibufKicker()
+			}
+		}()
 
 		return nil
 	}

@@ -1,6 +1,9 @@
 package main
 
-import "math/bits"
+import (
+	"math/bits"
+	"sync"
+)
 
 const (
 	ACC uint8 = 0
@@ -10,6 +13,9 @@ const (
 )
 
 type Storage struct {
+	lock                   sync.Mutex
+	obufKicker, ibufKicker func()
+
 	ACC  uint8
 	IX   uint8
 	PC   uint8
@@ -85,6 +91,49 @@ func (s *Storage) setRegister(a, v uint8) {
 		s.ACC = v
 	}
 	s.IX = v
+}
+
+func (s *Storage) SetOBUFKicker(fn func()) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.obufKicker = fn
+}
+
+func (s *Storage) SetIBUFKicker(fn func()) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.ibufKicker = fn
+}
+
+func (s *Storage) GetInput() (ibuf, ibufFlag uint8) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	return s.ibuf, s.ibufFlag
+}
+
+func (s *Storage) GetOutput() (obuf, obufFlag uint8) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	return s.obuf, s.obufFlag
+}
+
+func (s *Storage) SetInput(iv uint8) {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.ibufFlag = 1
+	s.ibuf = iv
+}
+
+func (s *Storage) ClearOBUFFlag() {
+	s.lock.Lock()
+	defer s.lock.Unlock()
+
+	s.obufFlag = 0
 }
 
 func NewStorage() *Storage {
