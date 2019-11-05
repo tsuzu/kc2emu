@@ -22,10 +22,15 @@ func main() {
 
 	NewSyncer(runner, &SyncableDstStdout{})
 
-	prevPhase := 0
+	var halt bool
+	var addr uint8
+	var prevPhase, nextPhase int
 	for {
-		addr := runner.PC
-		halt, nextPhase := runner.RunSinglePhase()
+		if nextPhase == 0 {
+			addr = runner.PC
+		}
+
+		halt, nextPhase = runner.RunSinglePhase()
 
 		fmt.Printf("%02x\t%x\t%02x\t%02x\t%02x\t%02x\t%02x\t%02x\n", addr, prevPhase, runner.PC, runner.FLAG, runner.ACC, runner.IX, runner.MAR, runner.IR)
 		if halt {

@@ -20,7 +20,7 @@ func p1(s *Storage) Phase {
 	sm := s.IR & 0b11
 	switch up {
 	case 0b0000:
-		if a == 0 {
+		if a == 1 {
 			return haltP2
 		}
 
