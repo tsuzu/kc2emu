@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -21,5 +22,16 @@ func main() {
 
 	NewSyncer(runner, &SyncableDstStdout{})
 
-	runner.Run()
+	prevPhase := 0
+	for {
+		addr := runner.PC
+		halt, nextPhase := runner.RunSinglePhase()
+
+		fmt.Printf("%02x\t%x\t%02x\t%02x\t%02x\t%02x\t%02x\t%02x\n", addr, prevPhase, runner.PC, runner.FLAG, runner.ACC, runner.IX, runner.MAR, runner.IR)
+		if halt {
+			break
+		}
+		prevPhase = nextPhase
+	}
+
 }

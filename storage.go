@@ -89,6 +89,8 @@ func (s *Storage) getRegister(a uint8) uint8 {
 func (s *Storage) setRegister(a, v uint8) {
 	if a == 0 {
 		s.ACC = v
+
+		return
 	}
 	s.IX = v
 }
