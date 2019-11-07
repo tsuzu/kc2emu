@@ -1,7 +1,6 @@
 package main
 
 import (
-	"math/bits"
 	"sync"
 )
 
@@ -37,7 +36,7 @@ func (s *Storage) Halt() {
 }
 
 func (s *Storage) set(index uint8, value bool) {
-	s.FLAG = s.FLAG & bits.Reverse8((uint8(1) << index))
+	s.FLAG = s.FLAG & ^(1 << index)
 	if value {
 		s.FLAG |= 1 << index
 	}

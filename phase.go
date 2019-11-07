@@ -43,12 +43,8 @@ func p1(s *Storage) Phase {
 		return loadP1(a, b)
 	case 0b0111:
 		return storeP1(a, b)
-	case 0b1000:
-	case 0b1001:
-	case 0b1010:
-	case 0b1011:
-	case 0b1110:
-	case 0b1111:
+	case 0b1000, 0b1001, 0b1010, 0b1011, 0b1110, 0b1111:
+		return aluP1(up, a, b)
 	}
 
 	panic("unknown operation")
@@ -70,14 +66,109 @@ func inDataMemory(b uint8) bool {
 	return (b & 1) != 0
 }
 
-/*func alu(s *Storage, a, v uint8) uint8 {
+func alu(s *Storage, up, left, right uint8) uint8 {
+	if (up>>1) == 0b100 && s.getCF() {
+		right += 1
+	}
+
+	tcf := false
+	tvf := false
+	switch up {
+	case 0b1001, 0b1011: // ADC/ADD
+		tcf = uint16(left+right) != uint16(left)+uint16(right)
+		tvf = int16(int8(left))+int16(int8(right)) != int16(int8(left)+int8(right))
+
+		left += right
+	case 0b1000, 0b1010: // SBC/SUB
+		tcf = left < right
+		tvf = int16(int8(left))-int16(int8(right)) != int16(int8(left)-int8(right))
+
+		left -= right
+	case 0b1100: // EOR
+		left ^= right
+	case 0b1101: // OR
+		left |= right
+	case 0b1110: // AND
+		left &= right
+	case 0b1111: // CMP
+		tcf = left > right
+		tvf = int16(int8(left))-int16(int8(right)) != int16(int8(left)-int8(right))
+
+		left -= right
+	}
+
+	// Set CF
+	if (up >> 1) == 0b100 {
+		s.setCF(tcf)
+	}
+
+	if up != 0b1100 && up != 0b1101 && up != 0b1110 {
+		s.setVF(tvf)
+	} else {
+		s.setVF(false)
+	}
+
+	s.setNF(left&0x80 != 0)
+	s.setZF(left == 0)
+
+	return left
 }
 
-func aluP1(a, b uint8) Phase {
+func aluP1(up, a, b uint8) Phase {
+	assignRes := func() bool {
+		return up != 0b1111
+	}
+
+	calc := func(s *Storage, right uint8) {
+		v := alu(s, up, s.getRegister(a), right)
+
+		if assignRes() {
+			s.setRegister(a, v)
+		}
+	}
+
 	regP2 := func(s *Storage) Phase {
-		s.setRegister(a, s.getRegister(b))
+		calc(s, s.getRegister(b))
 
 		return nil
+	}
+	addrP4 := func(s *Storage) Phase {
+		var v uint8
+
+		if inDataMemory(b) {
+			v = s.Memory[uint(s.MAR)+DataMemoryOffset]
+		} else {
+			v = s.Memory[s.MAR]
+		}
+
+		calc(s, v)
+
+		return nil
+	}
+
+	addrP3 := func(s *Storage) Phase {
+		if isImmediate(b) {
+			calc(s, s.Memory[s.MAR])
+
+			return nil
+		}
+
+		addr := s.Memory[s.MAR]
+
+		if hasIXOffset(b) {
+			addr += s.IX
+		}
+
+		s.MAR = addr
+
+		return addrP4
+	}
+
+	addrP2 := func(s *Storage) Phase {
+		s.MAR = s.PC
+		s.PC++
+
+		return addrP3
 	}
 
 	return func(s *Storage) Phase {
@@ -87,7 +178,7 @@ func aluP1(a, b uint8) Phase {
 
 		return addrP2(s)
 	}
-}*/
+}
 
 func storeP1(a, b uint8) Phase {
 	p4 := func(s *Storage) Phase {
@@ -101,7 +192,7 @@ func storeP1(a, b uint8) Phase {
 	}
 
 	p3 := func(s *Storage) Phase {
-		addr := s.MAR
+		addr := s.Memory[s.MAR]
 
 		if hasIXOffset(b) {
 			addr += s.IX
@@ -139,7 +230,7 @@ func loadP1(a, b uint8) Phase {
 		var v uint8
 
 		if inDataMemory(b) {
-			v = s.Memory[int(s.MAR)+DataMemoryOffset]
+			v = s.Memory[uint(s.MAR)+DataMemoryOffset]
 		} else {
 			v = s.Memory[s.MAR]
 		}
@@ -156,7 +247,7 @@ func loadP1(a, b uint8) Phase {
 			return nil
 		}
 
-		addr := s.MAR
+		addr := s.Memory[s.MAR]
 
 		if hasIXOffset(b) {
 			addr += s.IX
