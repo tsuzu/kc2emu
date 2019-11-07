@@ -1,4 +1,4 @@
-package main
+package emulator
 
 type Phase func(*Storage) Phase
 
@@ -285,7 +285,7 @@ func shiftRotateP1(a, sr, sm uint8) Phase {
 	}
 	p3v := func(v uint8) Phase {
 		return func(s *Storage) Phase {
-			s.setVF(s.getCF())
+			s.setVF(s.getCF() != (v&0x80 != 0))
 			s.setNF((v & 0x80) != 0)
 			s.setZF(v == 0)
 			return nil

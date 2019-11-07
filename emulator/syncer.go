@@ -1,4 +1,4 @@
-package main
+package emulator
 
 type SyncableSrc interface {
 	SetOBUFKicker(fn func())

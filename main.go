@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/cs3238-tsuzu/kc2emu/emulator"
 )
 
 func parse(prog string) []uint8 {
@@ -22,7 +24,7 @@ func parse(prog string) []uint8 {
 	return exe
 }
 
-func stepExecution(r *Runner, writer io.Writer) {
+func stepExecution(r *emulator.Runner, writer io.Writer) {
 	var halt bool
 	var addr uint8
 	var prevPhase, nextPhase int
@@ -41,13 +43,13 @@ func stepExecution(r *Runner, writer io.Writer) {
 	}
 
 	fmt.Fprint(writer, "program memory: [")
-	for i := 0; i < DataMemoryOffset; i++ {
+	for i := 0; i < emulator.DataMemoryOffset; i++ {
 		fmt.Fprintf(writer, "%02x ", r.Memory[i])
 	}
 	fmt.Fprint(writer, "]\n")
 
 	fmt.Fprint(writer, "data memory: [")
-	for i := DataMemoryOffset; i < len(r.Memory); i++ {
+	for i := emulator.DataMemoryOffset; i < len(r.Memory); i++ {
 		fmt.Fprintf(writer, "%02x ", r.Memory[i])
 	}
 	fmt.Fprint(writer, "]\n")
@@ -56,14 +58,15 @@ func stepExecution(r *Runner, writer io.Writer) {
 
 func main() {
 
-	sender := NewRunner(parse("67 00 41 41 41 41 b7 01 10 3c 09 ba 02 fa 18 31 00 0f"))
-	receiver := NewRunner(parse("34 00 1f 77 01 e2 f0 42 42 42 42 77 00 67 01 e2 0f 77 01 ba 02 fa 18 31 00 0f"))
+	sender := emulator.NewRunner(parse("67 00 41 41 41 41 b7 01 10 3c 09 ba 02 fa 18 31 00 0f"))
+	receiver := emulator.NewRunner(parse("34 00 1f 77 01 e2 f0 42 42 42 42 77 00 67 01 e2 0f 77 01 ba 02 fa 18 31 00 0f"))
 
 	for i := 0; i < 24; i++ {
-		sender.Memory[i+DataMemoryOffset] = uint8(i % 16)
+		sender.Memory[i+emulator.DataMemoryOffset] = uint8(i % 16)
 	}
+	sender.Memory[emulator.DataMemoryOffset] = 0x0f
 
-	NewSyncer(sender, receiver)
+	emulator.NewSyncer(sender, receiver)
 
 	sw, err := os.Create("sender.dump")
 

@@ -1,4 +1,4 @@
-package main
+package emulator
 
 type Runner struct {
 	phase     Phase
